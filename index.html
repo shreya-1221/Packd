@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Packd Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: a story rail (what is happening and why) beside one phone stage (the product); stacks on phones.
+   Palette: Scapia's two cards, orange (Visa) and green (RuPay), on a clean cool white. */
+:root{
+  color-scheme:light;
+  --paper:#FFF6EC; --card:#FFFFFF; --ink:#1F1B16; --ink-2:#55504A; --muted:#8C857D; --line:#EEE6DE;
+  --orange:#FF6B1A; --orange-soft:#FFE7D4; --orange-text:#C4470A; --on-orange:#1C0E04;
+  --green:#0E8F5E; --green-2:#19B377; --green-soft:#E0F6EA; --on-green:#FFFFFF; --green-text:#0B7A50;
+  --sun:#FFC83D; --sun-soft:#FFF1C2;
+  --chat:#EAF6EF; --bubble-in:#FFFFFF; --bubble-out:#D6F5E3;
+  --bezel:#FFFFFF; --scrim:rgba(31,27,22,.35);
+  --shadow:0 40px 80px -30px rgba(255,107,26,.45), 0 0 0 1px rgba(31,27,22,.06);
+  --tag-shadow:rgba(196,71,10,.32);
+  --sky:linear-gradient(160deg, #FFEBD9 0%, #FFF8EE 38%, #FFFBE8 62%, #E3F6EC 100%);
+  --f-display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --f-body:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+
+html{background:var(--paper)}
+body{background:var(--sky);background-attachment:fixed}
+body{
+  color:var(--ink); font-family:var(--f-body); font-size:15px; line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:36px 48px;
+}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+
+.wrap{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:64px;align-items:start}
+
+/* ---------- Story rail ---------- */
+.story{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 28px);display:flex;flex-direction:column;gap:22px;min-width:0}
+.kicker{font:600 12px/1.4 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.brand{font:800 clamp(84px, 11vw, 136px)/.8 var(--f-display);margin:0;letter-spacing:-.045em}
+.brand b,.logo b{font-weight:inherit;color:var(--orange)}
+.thesis{font:600 clamp(19px, 2vw, 24px)/1.32 var(--f-body);max-width:32ch;margin:0;text-wrap:balance;letter-spacing:-.01em}
+.thesis mark{background:linear-gradient(transparent 55%, var(--sun) 55%);color:inherit;padding:0 2px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.step{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;align-items:start;width:100%;padding:12px 14px;border-radius:18px;border:1.5px solid transparent;background:transparent;text-align:left;cursor:pointer}
+.step:hover{background:color-mix(in srgb, var(--card) 60%, transparent)}
+.step .n{font:800 26px/1 var(--f-display);color:var(--muted)}
+.step h3{font:700 16px/1.3 var(--f-body);margin:3px 0 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.step p{margin:4px 0 0;color:var(--ink-2);font-size:14px;max-width:46ch}
+.step .try{font:500 12.5px/1.4 var(--f-mono);color:var(--orange-text);margin-top:8px}
+.step:not(.active) p{display:none}
+.step.active{background:var(--card);border-color:var(--line)}
+.step.active .n{color:var(--orange)}
+.badge{font:600 10px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;padding:4px 7px;border-radius:6px;background:var(--orange);color:var(--on-orange)}
+.step-now{display:none}
+.footnote{font-size:12.5px;color:var(--muted);margin:0;max-width:52ch}
+
+/* ---------- Phone stage ---------- */
+.stage{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
+.stage::before{content:"";position:absolute;z-index:-1;top:-30px;left:50%;width:min(560px, 100%);aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle, var(--sun-soft) 0%, var(--sun-soft) 35%, transparent 70%)}
+.phone{position:relative;width:390px;max-width:100%;height:800px;background:var(--card);border:9px solid var(--bezel);border-radius:46px;box-shadow:var(--shadow);overflow:hidden;isolation:isolate}
+.phone.shake{animation:shake .4s cubic-bezier(.36,.07,.19,.97)}
+@keyframes shake{10%,90%{transform:translate(-1px,1px)}20%,80%{transform:translate(2px,-1px)}30%,50%,70%{transform:translate(-4px,1px)}40%,60%{transform:translate(4px,-1px)}}
+.status{position:absolute;top:0;left:0;right:0;height:40px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;padding:0 24px;font:700 13px var(--f-body);background:var(--card);z-index:6}
+.status .dev{justify-self:center;white-space:nowrap;font:600 10.5px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:99px;background:var(--orange-soft);color:var(--orange-text)}
+.status .sig{justify-self:end;display:flex;gap:3px;align-items:flex-end}
+.status .sig i{width:3px;background:var(--ink);border-radius:1px}
+.screen{position:absolute;inset:40px 0 0 0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;background:var(--card);scrollbar-width:thin}
+.screen.chat{background:var(--chat)}
+.screen.enter > *, .screen.enter .chat-body > *{animation:rise .38s cubic-bezier(.2,.8,.3,1) both}
+.screen.enter .chat-body > *{animation-delay:calc(var(--i, 0) * 70ms)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.stage-tools{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.tool{border:1.5px solid var(--orange-soft);background:var(--card);border-radius:99px;padding:7px 14px;font:600 13px var(--f-body);cursor:pointer}
+.tool:disabled{opacity:.4;cursor:default}
+
+/* ---------- Shared app pieces ---------- */
+.app-head{display:flex;justify-content:space-between;align-items:center;padding:10px 20px 12px;border-bottom:1px solid var(--line);flex:none}
+.logo{font:800 26px/1 var(--f-display);color:var(--ink);letter-spacing:-.045em}
+.who{font:500 11px var(--f-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.live{display:inline-flex;align-items:center;gap:6px;font:600 11px var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--orange-text)}
+.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--orange);animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.pad{padding:18px 20px 22px;display:flex;flex-direction:column;gap:16px;flex:1}
+.eyebrow{font:600 11.5px/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--orange-text);margin:0}
+.h-app{font:800 42px/.95 var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.035em}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:600 12.5px var(--f-body);padding:5px 11px;border-radius:99px;background:var(--green-soft);color:var(--green-text)}
+.block{display:flex;flex-direction:column;gap:4px}
+.label{font:600 11px/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px}
+.li.total{border-bottom:0;font-weight:800;font-size:15px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.muted{color:var(--muted)}
+.hint{font-size:13px;color:var(--ink-2);margin:0}
+.stepper{display:flex;align-items:center;gap:12px}
+.stepper button{width:42px;height:42px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);font:600 22px/1 var(--f-body);cursor:pointer}
+.stepper button:disabled{opacity:.35;cursor:default}
+.stepper output{font:800 50px/.9 var(--f-display);min-width:34px;text-align:center;color:var(--orange);font-variant-numeric:tabular-nums}
+.stepper span{font-weight:700}
+.promise{background:var(--orange-soft);border-radius:18px;padding:14px 16px;font-size:14px;margin:0}
+.cta-bar{position:sticky;bottom:0;flex:none;padding:14px 20px 18px;background:linear-gradient(to top, var(--card) 72%, transparent);display:flex;flex-direction:column;gap:7px;align-items:center;z-index:2}
+.cta-bar small{font-size:12px;color:var(--muted)}
+.btn{width:100%;border:0;border-radius:16px;padding:16px 18px;font:800 16px var(--f-body);cursor:pointer;transition:transform .12s}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn.orange{background:var(--orange);color:var(--on-orange)}
+.btn.ghost{background:transparent;border:1.5px solid var(--line)}
+.linkish{background:none;border:0;color:var(--orange-text);font:700 13px var(--f-body);text-decoration:underline;text-underline-offset:3px;cursor:pointer;align-self:center;padding:4px}
+
+/* ---------- Chat ---------- */
+.chat-head{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2;flex:none}
+.back{border:0;background:none;font-size:26px;line-height:1;padding:0 4px;cursor:pointer;color:var(--orange-text)}
+.gav{width:38px;height:38px;border-radius:50%;background:var(--sun);color:var(--on-orange);display:grid;place-items:center;font:800 18px var(--f-display);flex:none}
+.chat-head b{display:block;font-size:15px}
+.chat-head small{color:var(--muted);font-size:12px}
+.chat-body{padding:10px 12px 28px;display:flex;flex-direction:column;gap:6px}
+.day{align-self:center;font:600 10.5px var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);background:var(--card);padding:4px 10px;border-radius:8px;margin:8px 0 4px}
+.msg{max-width:80%;padding:7px 10px 6px;border-radius:14px 14px 14px 4px;background:var(--bubble-in);font-size:14px;line-height:1.38;align-self:flex-start}
+.msg > b{display:block;font-size:12px;color:var(--c, var(--orange-text));margin-bottom:1px}
+.msg.out{align-self:flex-end;background:var(--bubble-out);border-radius:14px 14px 4px 14px}
+.msg time{display:block;text-align:right;font:500 10px var(--f-mono);color:var(--muted);margin-top:3px}
+.poll-q{font-weight:700;display:block;margin:2px 0 6px}
+.opt{display:grid;grid-template-columns:52px 1fr 18px;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+.obar{height:6px;border-radius:4px;background:var(--line);overflow:hidden}
+.obar i{display:block;height:100%;background:var(--green-2);border-radius:inherit}
+.pk-card{display:flex;flex-direction:column;gap:7px;width:100%;margin-top:4px;padding:12px;border-radius:14px;border:1.5px solid var(--orange);background:var(--card);text-align:left;cursor:pointer;transition:transform .15s}
+.pk-card:hover{transform:translateY(-2px)}
+.pk-top{display:flex;justify-content:space-between;align-items:center}
+.pk-top .logo{font-size:20px}
+.pk-top span:last-child{font:600 10.5px var(--f-mono);color:var(--orange-text);text-transform:uppercase;letter-spacing:.05em}
+.pk-title{font:800 24px/1 var(--f-display);letter-spacing:-.03em}
+.pk-meta{font-size:13px;color:var(--ink-2)}
+.pk-meter{height:8px;border-radius:5px;background:var(--line);overflow:hidden}
+.pk-meter i{display:block;height:100%;background:var(--orange);border-radius:inherit}
+.pk-foot{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700}
+.pk-btn{background:var(--orange);color:var(--on-orange);padding:6px 11px;border-radius:9px;font-size:12.5px;font-weight:800}
+.tap-tip{align-self:center;font:600 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--orange-text);background:var(--orange-soft);padding:6px 11px;border-radius:99px;margin-top:6px}
+
+/* ---------- Ticket ---------- */
+.ticket{position:relative;border:1.5px solid var(--line);border-radius:22px;overflow:hidden;background:var(--card);flex:none}
+.t-main{padding:16px 18px 16px;background:var(--green);color:var(--on-green)}
+.t-main .label{color:inherit;opacity:.75}
+.t-title{font:800 36px/.95 var(--f-display);display:block;margin:4px 0 12px;letter-spacing:-.035em}
+.t-row{display:flex;justify-content:space-between;gap:12px;font-weight:700;font-size:14.5px}
+.t-row small{display:block;font:500 10px/1.5 var(--f-mono);opacity:.78;text-transform:uppercase;letter-spacing:.08em}
+.t-row > span:last-child{text-align:right}
+.t-perf{position:relative;height:0;border-top:2px dashed var(--line);margin:0 18px}
+.t-perf::before,.t-perf::after{content:"";position:absolute;top:-12px;width:22px;height:22px;border-radius:50%;background:var(--card);border:1.5px solid var(--line)}
+.t-perf::before{left:-30px}.t-perf::after{right:-30px}
+.seats{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:8px;padding:16px 14px 14px}
+.seat{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 4px 8px;border-radius:14px;border:1.5px dashed var(--line);background:transparent;font:600 12.5px/1.2 var(--f-body);color:var(--muted);min-width:0}
+.seat .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:800 15px/1 var(--f-display);background:var(--line);color:var(--ink-2)}
+.seat .nm{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seat.on{border-style:solid;border-color:var(--green-2);background:var(--green-soft);color:var(--ink)}
+.seat.on .av{background:var(--green-2);color:var(--on-green)}
+.seat.me{border-style:solid;border-color:var(--orange);color:var(--ink)}
+.seat.me .av{background:var(--orange);color:var(--on-orange)}
+.seat.pop{animation:pop .4s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{0%{transform:scale(.85)}100%{transform:scale(1)}}
+button.seat{cursor:pointer}
+button.seat:hover{border-color:var(--orange);color:var(--orange-text)}
+.t-foot{display:flex;justify-content:space-between;gap:10px;padding:10px 16px 12px;border-top:1px solid var(--line);font:500 11px var(--f-mono);color:var(--ink-2);text-transform:uppercase;letter-spacing:.05em}
+.assure{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.assure li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;font-size:13.5px;color:var(--ink-2)}
+.assure li::before{content:"✓";width:22px;height:22px;border-radius:50%;background:var(--green-soft);color:var(--green-text);display:grid;place-items:center;font-weight:800;font-size:12px}
+.assure b{color:var(--ink)}
+
+/* ---------- Core moment: the luggage tag ---------- */
+.meter{display:flex;align-items:baseline;gap:4px;margin-top:-4px}
+.meter-num{font:800 124px/.8 var(--f-display);font-variant-numeric:tabular-nums;letter-spacing:-.05em}
+.meter-of{font:800 46px/1 var(--f-display);color:var(--muted);letter-spacing:-.03em}
+.meter-sub{font:800 17px var(--f-body);margin:0}
+.bar{position:relative;height:12px;border-radius:99px;background:var(--line);margin:30px 0 4px}
+.bar-fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:inherit;background:var(--orange);transition:width .55s cubic-bezier(.3,1.35,.5,1), background .3s}
+.bar-fill.won{background:var(--green-2)}
+.bar-mark{position:absolute;top:-7px;bottom:-7px;width:3px;margin-left:-1.5px;border-radius:2px;background:var(--ink);transition:left .3s}
+.bar-mark > span{position:absolute;bottom:calc(100% + 3px);left:50%;transform:translateX(-50%);font:600 10px var(--f-mono);color:var(--ink-2);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em}
+.tag{position:absolute;left:50%;top:30px;z-index:3;width:196px;margin-left:-98px;opacity:0;pointer-events:none;transform-origin:50% -34px;filter:drop-shadow(0 14px 18px var(--tag-shadow))}
+.tag::before{content:"";position:absolute;left:50%;top:-60px;width:2px;height:74px;margin-left:-1px;background:var(--ink-2);border-radius:1px}
+.tag-body{display:flex;flex-direction:column;align-items:center;gap:4px;padding:30px 14px 16px;background:var(--orange);color:var(--on-orange);clip-path:polygon(26px 0, calc(100% - 26px) 0, 100% 26px, 100% 100%, 0 100%, 0 26px);border-radius:0 0 16px 16px}
+.tag-hole{width:14px;height:14px;border-radius:50%;background:var(--card);position:absolute;top:10px;left:50%;margin-left:-7px;box-shadow:inset 0 0 0 2px var(--on-orange)}
+.tag-k{font:600 10.5px/1.3 var(--f-mono);letter-spacing:.12em;text-transform:uppercase}
+.tag-w{font:800 52px/.9 var(--f-display);letter-spacing:-.04em}
+.tag.on{animation:hang 1.15s cubic-bezier(.3,.7,.3,1) forwards}
+.tag.set{opacity:1;transform:rotate(3deg)}
+@keyframes hang{0%{opacity:0;transform:translateY(-130%) rotate(-28deg)}42%{opacity:1;transform:translateY(0) rotate(15deg)}60%{transform:rotate(-9deg)}76%{transform:rotate(5deg)}90%{transform:rotate(-2deg)}100%{opacity:1;transform:rotate(3deg)}}
+.tipped{background:var(--green-soft);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.tipped h3{font:800 32px/.95 var(--f-display);margin:0;color:var(--green-text);letter-spacing:-.035em}
+.tipped p{margin:0;font-size:14px}
+#confetti{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:20}
+
+/* ---------- Organiser pool ---------- */
+.pool{position:relative;border-radius:22px;padding:18px;background:linear-gradient(135deg, var(--orange) 0%, var(--sun) 100%);color:var(--on-orange);overflow:hidden}
+.pool .label{color:inherit;opacity:.7}
+.pool-big{display:block;font:800 58px/.9 var(--f-display);margin:8px 0 8px;font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.pool-sub{font-size:13px;opacity:.85}
+.mini-tag{position:absolute;right:16px;top:16px;background:var(--card);color:var(--orange-text);font:800 15px/1 var(--f-display);padding:7px 10px 6px 18px;transform:rotate(-8deg);clip-path:polygon(10px 0,100% 0,100% 100%,10px 100%,0 50%);letter-spacing:-.02em}
+.book{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 14px;border:1.5px solid var(--line);border-radius:18px}
+.book b{display:block;font-size:14.5px}
+.book .sub{font-size:12.5px;color:var(--muted)}
+.book button{grid-column:1 / -1;margin-top:8px;border:0;border-radius:12px;padding:10px;font:800 14px var(--f-body);background:var(--orange);color:var(--on-orange);cursor:pointer}
+.book button.done{background:var(--green-soft);color:var(--green-text);cursor:default}
+.note{font-size:13px;color:var(--ink-2);margin:0;padding:12px 14px;border-radius:16px;background:var(--orange-soft)}
+.note b{color:var(--ink)}
+.feed{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.feed li{display:grid;grid-template-columns:12px minmax(0,1fr);gap:12px;padding-bottom:14px;position:relative;font-size:13.5px}
+.feed li::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--orange);margin-top:5px}
+.feed li:not(:last-child)::after{content:"";position:absolute;left:4.5px;top:17px;bottom:2px;width:1.5px;background:var(--line)}
+.feed time{display:block;font:500 10.5px var(--f-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.biz{border:1.5px dashed var(--line);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.toast{background:var(--green);color:var(--on-green);font-weight:800;font-size:14px;padding:12px 14px;border-radius:14px;text-align:center}
+
+/* ---------- Sheets ---------- */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:10;animation:fade .2s both}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:11;background:var(--card);border-radius:28px 28px 0 0;padding:10px 20px 24px;display:flex;flex-direction:column;gap:12px;animation:up .3s cubic-bezier(.2,.9,.3,1) both;max-height:88%;overflow-y:auto}
+@keyframes fade{from{opacity:0}}
+@keyframes up{from{transform:translateY(100%)}}
+.grab{width:42px;height:5px;border-radius:3px;background:var(--line);align-self:center;margin-bottom:4px}
+.sh-h{font:800 38px/.95 var(--f-display);margin:0;letter-spacing:-.035em}
+.done-ic{width:72px;height:72px;border-radius:50%;background:var(--green-2);color:var(--card);display:grid;place-items:center;font-size:36px;font-weight:800;align-self:center;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+.spin{width:38px;height:38px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--orange);align-self:center;animation:spin .8s linear infinite;margin:18px 0 6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.center{text-align:center}
+
+/* ---------- Narrow screens ---------- */
+@media (max-width: 880px){
+  body{padding-block:20px 36px}
+  .wrap{grid-template-columns:minmax(0,1fr);gap:18px}
+  .story{position:static;gap:14px}
+  .brand{font-size:92px}
+  .thesis{font-size:18px}
+  .steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+  .step{grid-template-columns:1fr;justify-items:center;padding:8px 4px;background:var(--card);border-color:var(--line)}
+  .step h3,.step p,.step .try{display:none}
+  .step.active{border-color:var(--orange)}
+  .step-now{display:block;background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:12px 14px}
+  .step-now h3{font:700 16px var(--f-body);margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .step-now p{margin:4px 0 0;font-size:14px;color:var(--ink-2)}
+  .step-now .try{font:500 12.5px/1.4 var(--f-mono);color:var(--orange-text);margin-top:6px}
+  .phone{width:100%;max-width:420px;height:760px;border-width:7px;border-radius:34px}
+  .footnote.desk{display:none}
+}
+@media (max-width: 380px){ .meter-num{font-size:100px} .h-app{font-size:36px} }
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-delay:0ms !important;transition-duration:.01ms !important}
+}
+</style>
+
+<div class="wrap">
+  <aside class="story">
+    <p class="kicker">Concept for Scapia · Product assignment</p>
+    <h1 class="brand">pack<b>d</b></h1>
+    <p class="thesis">Eight friends voted yes on the trip poll. Then someone had to book the villa with their own money. <mark>Packd makes a yes cost something</mark>, so the organiser never fronts the trip.</p>
+    <ol class="steps" id="steps"></ol>
+    <div class="step-now" id="stepNow"></div>
+    <p class="footnote desk">Payments are simulated. The money hold uses UPI Reserve Pay, which lets a bank block an amount now and debit it later, the same way IPO applications block funds.</p>
+  </aside>
+
+  <main class="stage">
+    <div class="phone" id="phone">
+      <div class="status"><span>9:41</span><span class="dev" id="dev">Aarav's phone</span><span class="sig" aria-hidden="true"><i style="height:4px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i></span></div>
+
+      <!-- 1 · Organiser sets the bar -->
+      <section class="screen" id="s1" data-step="1">
+        <header class="app-head"><span class="logo">pack<b>d</b></span><span class="who">New trip</span></header>
+        <div class="pad">
+          <p class="eyebrow">You're organising</p>
+          <h2 class="h-app">Gokarna, finally</h2>
+          <div class="chips"><span class="chip">Fri 20 – Sun 22 Nov</span><span class="chip">9 in the group</span></div>
+          <div class="block">
+            <p class="label">Each person pays</p>
+            <div class="li"><span>Villa near Kudle beach · 2 nights</span><span class="num">₹2,900</span></div>
+            <div class="li"><span>Sleeper bus, Bengaluru ⇄ Gokarna</span><span class="num">₹1,900</span></div>
+            <div class="li total"><span>Per head</span><span class="num">₹4,800</span></div>
+          </div>
+          <div class="block">
+            <p class="label">Gets packd when</p>
+            <div class="stepper">
+              <button id="thMinus" aria-label="Lower the number needed">−</button>
+              <output id="thOut" aria-live="polite">6</output>
+              <button id="thPlus" aria-label="Raise the number needed">+</button>
+              <span>of 9 lock in</span>
+            </div>
+            <p class="hint">Below this, the villa doesn't make sense, so nobody gets charged.</p>
+          </div>
+          <div class="block">
+            <p class="label">Lock-in closes</p>
+            <div class="li"><span>Wed 18 Nov, 9:00 PM</span><span class="muted">2 days before</span></div>
+          </div>
+          <p class="promise">If <b class="th">6</b> friends lock in by Wednesday, <b id="poolPreview">₹28,800</b> is collected from all of them at once and you book. If not, everyone's money is released. You never front a rupee.</p>
+        </div>
+        <div class="cta-bar"><button class="btn orange" data-go="2">Share in the group</button></div>
+      </section>
+
+      <!-- 2 · It lands in the WhatsApp group -->
+      <section class="screen chat" id="s2" data-step="2" hidden>
+        <header class="chat-head">
+          <button class="back" data-go="1" aria-label="Back">‹</button>
+          <div class="gav">G</div>
+          <div><b>Gokarna finally??</b><small>Aarav, Kabir, Ishaan, Tanvi, You +4</small></div>
+        </header>
+        <div class="chat-body">
+          <div class="day" style="--i:0">3 weeks ago</div>
+          <div class="msg" style="--i:1"><b style="--c:var(--green-text)">Kabir</b>guys gokarna in nov?? we've been saying this since 2nd year<time>11:02 PM</time></div>
+          <div class="msg out" style="--i:2">INNN 🙋‍♀️<time>11:03 PM</time></div>
+          <div class="msg" style="--i:3"><b style="--c:var(--orange-text)">Ishaan</b>in in in<time>11:03 PM</time></div>
+          <div class="msg" style="--i:4"><b style="--c:var(--green-text)">Kabir</b><span class="poll-q">📊 Gokarna, 20–22 Nov?</span>
+            <div class="opt"><span>Yes</span><span class="obar"><i style="width:89%"></i></span><span class="num">8</span></div>
+            <div class="opt"><span>Maybe</span><span class="obar"><i style="width:11%"></i></span><span class="num">1</span></div>
+            <time>11:05 PM</time></div>
+          <div class="msg" style="--i:5"><b style="--c:var(--ink-2)">Tanvi</b>someone just book na 😭<time>12:40 AM</time></div>
+          <div class="msg" style="--i:6"><b style="--c:var(--orange-text)">Dev</b>send the villa link, I'll pay you later<time>12:41 AM</time></div>
+          <div class="day" style="--i:7">Today</div>
+          <div class="msg" style="--i:8;max-width:88%"><b style="--c:var(--orange-text)">Aarav</b>ok no more polls. lock in here 👇
+            <button class="pk-card" data-go="3" id="pkCard">
+              <span class="pk-top"><span class="logo">pack<b>d</b></span><span>Closes Wed 9 PM</span></span>
+              <span class="pk-title">Gokarna, finally</span>
+              <span class="pk-meta">Fri 20 – Sun 22 Nov · ₹4,800 each</span>
+              <span class="pk-meter"><i id="pkMeter" style="width:66%"></i></span>
+              <span class="pk-foot"><span><span id="pkCount">4</span> of <span class="th">6</span> locked</span><span class="pk-btn">Lock my seat</span></span>
+            </button>
+            <time>6:12 PM</time></div>
+          <div class="msg" style="--i:9"><b style="--c:var(--green-text)">Rhea</b>wait so nobody pays unless <span class="th">6</span> of us lock?<time>6:14 PM</time></div>
+          <div class="msg" style="--i:10"><b style="--c:var(--orange-text)">Aarav</b>yep. no <span class="th">6</span>, no charge. and nobody has to go first<time>6:14 PM</time></div>
+          <span class="tap-tip" style="--i:11">Tap the Packd card to open it as Meera</span>
+        </div>
+      </section>
+
+      <!-- 3 · A friend locks in -->
+      <section class="screen" id="s3" data-step="3" hidden>
+        <header class="app-head"><span class="logo">pack<b>d</b></span><span class="who">Invite</span></header>
+        <div class="pad">
+          <p class="eyebrow">Aarav invited you</p>
+          <div class="ticket">
+            <div class="t-main">
+              <span class="label">Trip</span>
+              <span class="t-title">Gokarna, finally</span>
+              <div class="t-row"><span><small>Dates</small>Fri 20 – Sun 22 Nov</span><span><small>Your share</small>₹4,800</span></div>
+            </div>
+            <div class="seats" id="seats3"></div>
+            <div class="t-perf" aria-hidden="true"></div>
+            <div class="t-foot"><span><b id="cnt3">4</b> of <b class="th">6</b> locked</span><span>Closes Wed 9 PM</span></div>
+          </div>
+          <ul class="assure">
+            <li><span><b>Blocked, not paid.</b> ₹4,800 stays in your bank until <span class="th">6</span> people lock in.</span></li>
+            <li><span><b>Released if it doesn't happen.</b> Fewer than <span class="th">6</span> by Wednesday 9 PM, the block lifts by itself.</span></li>
+            <li><span><b>Plans change?</b> Hand your seat to someone else in the group and get your money back.</span></li>
+          </ul>
+        </div>
+        <div class="cta-bar"><button class="btn orange" id="lockBtn">Lock my seat · ₹4,800</button><small>No fees for your group. You only ever pay your share.</small></div>
+      </section>
+
+      <!-- 4 · The tipping point -->
+      <section class="screen" id="s4" data-step="4" hidden>
+        <header class="app-head"><span class="logo">pack<b>d</b></span><span class="live">Live</span></header>
+        <div class="pad">
+          <p class="eyebrow">Gokarna, finally · 20–22 Nov</p>
+          <div>
+            <div class="meter"><span class="meter-num" id="cnt4">5</span><span class="meter-of">/<span class="th">6</span></span></div>
+            <p class="meter-sub" id="meterSub">1 more and it's packd.</p>
+            <div class="bar" aria-hidden="true"><div class="bar-fill" id="barFill"></div><div class="bar-mark" id="barMark"><span>Packd at <span class="th">6</span></span></div></div>
+          </div>
+          <div class="ticket" id="ticket4">
+            <div class="seats" id="seats4"></div>
+            <div class="t-foot"><span id="waiting">Still deciding: Rhea, Dev, Nikhil, Sana</span></div>
+            <div class="tag" id="tag" aria-hidden="true">
+              <div class="tag-body"><span class="tag-hole"></span><span class="tag-k">BLR → Gokarna</span><span class="tag-w">packd</span><span class="tag-k" id="tagSub">20–22 Nov · 6 going</span></div>
+            </div>
+          </div>
+          <p class="hint" id="tapHint">Prototype: tap an open seat to have that friend lock in.</p>
+          <div class="tipped" id="tipped" hidden>
+            <h3>It's packd.</h3>
+            <p id="tippedText">₹28,800 collected from 6 friends in one go. Nobody went first, so nobody got stuck paying for a plan that died.</p>
+            <button class="btn primary" data-go="5">See Aarav's view</button>
+          </div>
+          <button class="linkish" id="failLink">What if only 5 lock in?</button>
+        </div>
+      </section>
+
+      <!-- 5 · Organiser books from the pool -->
+      <section class="screen" id="s5" data-step="5" hidden>
+        <header class="app-head"><span class="logo">pack<b>d</b></span><span class="who">Organiser</span></header>
+        <div class="pad">
+          <div class="pool">
+            <p class="label">Group pool</p>
+            <b class="pool-big" id="poolBig">₹28,800</b>
+            <span class="pool-sub" id="poolSub">6 seats × ₹4,800 · collected Mon 16 Nov</span>
+            <span class="mini-tag" aria-hidden="true">packd</span>
+          </div>
+          <p class="label">Book from the pool</p>
+          <div class="book" id="bkVilla"><div><b>Villa near Kudle beach</b><span class="sub">2 nights · <span class="bkN">6</span> guests</span></div><span class="num" id="amtVilla">₹17,400</span><button data-bk="villa">Pay from pool</button></div>
+          <div class="book" id="bkBus"><div><b>Sleeper bus, both ways</b><span class="sub">Bengaluru ⇄ Gokarna · <span class="bkN">6</span> berths</span></div><span class="num" id="amtBus">₹11,400</span><button data-bk="bus">Pay from pool</button></div>
+          <div class="li total"><span>Left in pool</span><span class="num" id="left">₹28,800</span></div>
+          <div class="toast" id="toast" hidden>Trip booked. Aarav paid ₹0 from his own pocket.</div>
+          <p class="note"><b>Booked on Scapia.</b> The pool pays through the Scapia app, so Aarav earns Scapia Coins on the whole group's booking. Organising finally pays the organiser.</p>
+          <p class="label">Since it got packd</p>
+          <ol class="feed" id="feed"></ol>
+          <div class="biz">
+            <p class="label">How Packd makes money</p>
+            <span class="hint" id="bizLine">The group pays nothing extra. Packd earns a commission on the ₹28,800 booked from the pool, and the booking runs through Scapia.</span>
+          </div>
+        </div>
+        <div class="cta-bar"><button class="btn ghost" id="restart">Start over</button></div>
+      </section>
+
+      <div class="scrim" id="scrim" hidden></div>
+      <div class="sheet" id="sheet" role="dialog" aria-modal="true" hidden></div>
+      <canvas id="confetti" aria-hidden="true"></canvas>
+    </div>
+    <div class="stage-tools">
+      <button class="tool" id="prevBtn">← Back</button>
+      <button class="tool" id="nextBtn">Next →</button>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const PRICE = 4800, VILLA = 2900, BUS = 1900, SQUAD = 9;
+  const ROSTER = [['Aarav',1],['Kabir',1],['Ishaan',1],['Tanvi',1],['Meera',0],['Rhea',0],['Dev',0],['Nikhil',0],['Sana',0]];
+  const STEPS = [
+    {t:'Set the bar', d:'Aarav, the organiser, sets the price per head and how many people must commit before anything is booked.', try:'Try: change the number with − and +.', dev:"Aarav's phone"},
+    {t:'Drop it in the group', d:'Packd lives inside the WhatsApp group they already use. Eight people voted yes on the poll three weeks ago. Nothing was booked.', try:'Try: tap the Packd card in the chat.', dev:"Meera's phone"},
+    {t:'Friends lock in', d:"Meera's ₹4,800 is blocked in her own bank account, not paid. If the trip doesn't get packd, the block lifts by itself.", try:'Try: lock Meera’s seat and approve the demo UPI request.', dev:"Meera's phone"},
+    {t:'It gets packd', core:true, d:'The moment the threshold is hit, everyone is charged together. Nobody has to go first, so nobody is left paying for a plan that dies.', try:'Try: tap open seats until the trip gets packd.', dev:"Meera's phone"},
+    {t:'Book from the pool', d:"Aarav books with the group's money instead of his own. A dropout hands their seat on instead of leaving a hole in the budget.", try:'Try: pay the villa and bus from the pool.', dev:"Aarav's phone"}
+  ];
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const inr = n => '₹' + n.toLocaleString('en-IN');
+  let S;
+
+  function reset(){
+    S = {th:6, cur:1, tipped:false, sixth:null, booked:{villa:false,bus:false},
+         people: ROSTER.map(([n,l]) => ({n, locked:!!l}))};
+  }
+  const count = () => S.people.filter(p => p.locked).length;
+  const meera = () => S.people[4];
+
+  /* ---------- story rail ---------- */
+  function renderSteps(){
+    $('#steps').innerHTML = STEPS.map((s,i) => `
+      <li><button class="step${S.cur===i+1?' active':''}" data-jump="${i+1}" aria-current="${S.cur===i+1?'step':'false'}">
+        <span class="n">${i+1}</span>
+        <span><h3>${s.t}${s.core?' <span class="badge">Core moment</span>':''}</h3><p>${s.d}</p><p class="try">${s.try}</p></span>
+      </button></li>`).join('');
+    const s = STEPS[S.cur-1];
+    $('#stepNow').innerHTML = `<h3>${S.cur}. ${s.t}${s.core?' <span class="badge">Core moment</span>':''}</h3><p>${s.d}</p><p class="try">${s.try}</p>`;
+    $('#dev').textContent = s.dev;
+    $('#prevBtn').disabled = S.cur === 1;
+    $('#nextBtn').disabled = S.cur === 5;
+  }
+
+  /* ---------- threshold ---------- */
+  function syncTh(){
+    $$('.th').forEach(e => e.textContent = S.th);
+    $('#thOut').textContent = S.th;
+    $('#poolPreview').textContent = inr(S.th * PRICE);
+    $('#thMinus').disabled = S.th <= 5;
+    $('#thPlus').disabled = S.th >= SQUAD;
+    $('#failLink').textContent = `What if only ${S.th-1} lock in?`;
+  }
+
+  /* ---------- seats ---------- */
+  function seatsHTML(mode){
+    return S.people.map((p,i) => {
+      const me = mode === 'invite' && i === 4;
+      const cls = 'seat' + (p.locked ? ' on' : '') + (me && !p.locked ? ' me' : '');
+      const name = me ? 'You' : p.n;
+      const inner = `<span class="av">${p.n[0]}</span><span class="nm">${name}</span>`;
+      if (mode === 'live' && !p.locked) return `<button class="${cls}" data-seat="${i}" aria-label="${p.n} locks in">${inner}</button>`;
+      return `<div class="${cls}" data-idx="${i}">${inner}</div>`;
+    }).join('');
+  }
+
+  function render2(){
+    const c = count();
+    $('#pkCount').textContent = c;
+    $('#pkMeter').style.width = Math.min(100, c / S.th * 100) + '%';
+  }
+  function render3(){
+    $('#seats3').innerHTML = seatsHTML('invite');
+    $('#cnt3').textContent = count();
+  }
+  function render4(popIdx){
+    const c = count();
+    $('#seats4').innerHTML = seatsHTML('live');
+    if (popIdx != null){ const el = $(`#seats4 [data-idx="${popIdx}"]`); if (el) el.classList.add('pop'); }
+    $('#cnt4').textContent = c;
+    $('#barFill').style.width = (c / SQUAD * 100) + '%';
+    $('#barFill').classList.toggle('won', S.tipped);
+    $('#barMark').style.left = (S.th / SQUAD * 100) + '%';
+    const left = S.th - c;
+    $('#meterSub').textContent = S.tipped ? "It's packd. Everyone's charged together." :
+      left === 1 ? "1 more and it's packd." : `${left} more and it's packd.`;
+    const waiting = S.people.filter(p => !p.locked).map(p => p.n);
+    $('#waiting').textContent = waiting.length ? (S.tipped ? 'Open seats: ' : 'Still deciding: ') + waiting.join(', ') : 'All 9 seats locked';
+    $('#tapHint').hidden = S.tipped && !waiting.length;
+    $('#tapHint').textContent = S.tipped ? 'Open seats can still join at the same price until Wednesday.' : 'Prototype: tap an open seat to have that friend lock in.';
+    $('#tipped').hidden = !S.tipped;
+    $('#failLink').hidden = S.tipped;
+    $('#tagSub').textContent = `20–22 Nov · ${c} going`;
+    if (S.tipped){
+      $('#tippedText').textContent = `${inr(c * PRICE)} collected from ${c} friends in one go. Nobody went first, so nobody got stuck paying for a plan that died.`;
+    }
+  }
+  function render5(){
+    const c = count();
+    const pool = c * PRICE, villa = c * VILLA, bus = c * BUS;
+    $('#poolBig').textContent = inr(pool);
+    $('#poolSub').textContent = `${c} seats × ₹4,800 · collected Mon 16 Nov, 10:42 PM`;
+    $$('.bkN').forEach(e => e.textContent = c);
+    $('#amtVilla').textContent = inr(villa);
+    $('#amtBus').textContent = inr(bus);
+    const spent = (S.booked.villa ? villa : 0) + (S.booked.bus ? bus : 0);
+    $('#left').textContent = inr(pool - spent);
+    $$('.book button').forEach(b => {
+      const done = S.booked[b.dataset.bk];
+      b.textContent = done ? 'Booked ✓' : 'Pay from pool';
+      b.classList.toggle('done', done);
+      b.disabled = done;
+    });
+    $('#toast').hidden = !(S.booked.villa && S.booked.bus);
+    const open = S.people.filter(p => !p.locked);
+    const swap = open[0];
+    const items = [
+      ['Mon 16 Nov · 10:42 PM', `${S.sixth || 'Rhea'} locked seat ${S.th}. The trip got packd and ${inr(S.th * PRICE)} was collected from everyone at once.`],
+      ['Tue 17 Nov · 11:40 AM', 'Kabir can’t come anymore. His seat went up in the group instead of disappearing.'],
+      swap
+        ? ['Tue 17 Nov · 2:15 PM', `${swap.n} took Kabir’s seat. Kabir got his ₹4,800 back. Aarav didn’t chase anyone.`]
+        : ['Tue 17 Nov · 2:15 PM', 'Kabir’s seat is still listed. Anyone in the group can take it until Wednesday.']
+    ];
+    $('#feed').innerHTML = items.map(([t,x]) => `<li><span><time>${t}</time>${x}</span></li>`).join('');
+    $('#bizLine').textContent = `The group pays nothing extra. Packd earns a commission on the ${inr(c * PRICE)} booked from the pool, and the booking runs through Scapia.`;
+  }
+
+  /* ---------- navigation ---------- */
+  function ensure(n){
+    if (n >= 4 && !meera().locked) meera().locked = true;
+    if (n >= 5 && !S.tipped){
+      for (const p of S.people){
+        if (count() >= S.th) break;
+        if (!p.locked){ p.locked = true; S.sixth = p.n; }
+      }
+      if (!S.sixth) S.sixth = 'Meera';
+      S.tipped = true;
+      $('#tag').classList.add('set');
+    }
+  }
+  function go(n){
+    n = Math.max(1, Math.min(5, n));
+    closeSheet();
+    ensure(n);
+    S.cur = n;
+    $$('.screen').forEach(s => s.hidden = +s.dataset.step !== n);
+    const scr = $('#s' + n);
+    scr.scrollTop = 0;
+    scr.classList.remove('enter'); void scr.offsetWidth; scr.classList.add('enter');
+    renderSteps(); syncTh();
+    if (n === 2) render2();
+    if (n === 3) render3();
+    if (n === 4){ render4(); if (!S.tipped && count() >= S.th) setTimeout(tip, 550); }
+    if (n === 5) render5();
+  }
+
+  /* ---------- the core moment ---------- */
+  function tip(){
+    if (S.tipped) return;
+    S.tipped = true;
+    if (!S.sixth) S.sixth = 'Meera';
+    const tag = $('#tag');
+    tag.classList.remove('set','on'); void tag.offsetWidth; tag.classList.add('on');
+    setTimeout(() => {
+      const ph = $('#phone');
+      ph.classList.remove('shake'); void ph.offsetWidth; ph.classList.add('shake');
+      confetti();
+    }, 470);
+    render4();
+    setTimeout(() => {
+      const scr = $('#s4'), t = $('#tipped');
+      if (S.cur === 4 && !t.hidden) scr.scrollTo({top: Math.max(0, t.offsetTop + t.offsetHeight - scr.clientHeight + 24), behavior: 'smooth'});
+    }, 1700);
+  }
+  function lockSeat(i){
+    const p = S.people[i];
+    if (!p || p.locked) return;
+    p.locked = true;
+    const tipsNow = !S.tipped && count() >= S.th;
+    if (tipsNow) S.sixth = p.n;
+    render4(i);
+    if (tipsNow) setTimeout(tip, 180);
+  }
+
+  /* ---------- confetti in the card colours ---------- */
+  function confetti(){
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const c = $('#confetti'), r = $('#phone').getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    c.width = r.width * dpr; c.height = r.height * dpr;
+    const ctx = c.getContext('2d'); ctx.scale(dpr, dpr);
+    const cs = getComputedStyle(document.documentElement);
+    const cols = ['--orange','--orange','--green-2','--green-2','--sun'].map(v => cs.getPropertyValue(v).trim());
+    const W = r.width, H = r.height;
+    const ps = Array.from({length: 120}, () => ({
+      x: Math.random() * W, y: -20 - Math.random() * H * .6,
+      vx: (Math.random() - .5) * 1.6, vy: 2.2 + Math.random() * 3,
+      a: Math.random() * 6.28, va: (Math.random() - .5) * .3,
+      w: 6 + Math.random() * 6, h: 10 + Math.random() * 7, round: Math.random() < .5,
+      col: cols[Math.floor(Math.random() * cols.length)]
+    }));
+    const t0 = performance.now();
+    (function frame(t){
+      const k = (t - t0) / 2600;
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalAlpha = Math.max(0, 1 - Math.max(0, k - .7) / .3);
+      for (const p of ps){
+        p.x += p.vx + Math.sin(p.a) * .6; p.y += p.vy; p.a += p.va;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.col; ctx.beginPath();
+        if (p.round) ctx.ellipse(0, 0, p.w / 2, p.h / 2, 0, 0, 6.283); else ctx.rect(-p.w / 2, -p.h / 3, p.w, p.h / 1.5);
+        ctx.fill(); ctx.restore();
+      }
+      if (k < 1) requestAnimationFrame(frame); else ctx.clearRect(0, 0, W, H);
+    })(t0);
+  }
+
+  /* ---------- sheets ---------- */
+  function openSheet(html){
+    $('#sheet').innerHTML = '<span class="grab" aria-hidden="true"></span>' + html;
+    $('#sheet').hidden = false; $('#scrim').hidden = false;
+    const f = $('#sheet button'); if (f) f.focus({preventScroll:true});
+  }
+  function closeSheet(){ $('#sheet').hidden = true; $('#scrim').hidden = true; }
+
+  function upiStart(){
+    openSheet(`
+      <p class="eyebrow">UPI Reserve Pay · demo</p>
+      <h3 class="sh-h">Block ₹4,800</h3>
+      <div class="block">
+        <div class="li"><span>Seat · Gokarna, finally</span><span class="num">₹4,800</span></div>
+        <div class="li"><span>From</span><span class="num">Meera's UPI app</span></div>
+      </div>
+      <p class="hint">The money stays in your bank account. It's debited only if ${S.th} people lock in. If they don't by Wed 18 Nov, 9 PM, the block lifts by itself.</p>
+      <button class="btn orange" id="toUpi">Approve in my UPI app</button>`);
+    $('#toUpi').onclick = upiWaiting;
+  }
+  function upiWaiting(){
+    openSheet(`<div class="spin" aria-hidden="true"></div>
+      <p class="center" style="margin:0;font-weight:700">Approve the ₹4,800 block in your UPI app</p>
+      <p class="hint center" style="margin-bottom:18px">Demo: this step is simulated and nothing is charged.</p>`);
+    setTimeout(() => {
+      meera().locked = true;
+      render3();
+      openSheet(`
+        <div class="done-ic" aria-hidden="true">✓</div>
+        <h3 class="sh-h center">Seat locked</h3>
+        <p class="hint center">₹4,800 is blocked, not paid. You'll be charged only when ${S.th} people are in.</p>
+        <button class="btn primary" id="toLive">See who else is in</button>`);
+      $('#toLive').onclick = () => go(4);
+    }, 1600);
+  }
+  function failSheet(){
+    const k = S.th - 1;
+    openSheet(`
+      <p class="eyebrow">Wed 18 Nov, 9:00 PM</p>
+      <h3 class="sh-h">Stuck at ${k} of ${S.th}</h3>
+      <ul class="assure">
+        <li><span><b>Every block lifts automatically.</b> All ${k} people get their full amount back.</span></li>
+        <li><span><b>The group gets one message:</b> "Gokarna didn't get packd. Try new dates?" Nobody has to send the awkward follow-up.</span></li>
+        <li><span><b>Aarav loses nothing.</b> He never booked on his own card, so there's no cancellation fee to eat.</span></li>
+      </ul>
+      <button class="btn ghost" id="closeFail">Back to the live count</button>`);
+    $('#closeFail').onclick = closeSheet;
+  }
+
+  /* ---------- wiring ---------- */
+  document.addEventListener('click', e => {
+    const g = e.target.closest('[data-go]'); if (g){ go(+g.dataset.go); return; }
+    const j = e.target.closest('[data-jump]'); if (j){ go(+j.dataset.jump); return; }
+    const s = e.target.closest('[data-seat]'); if (s){ lockSeat(+s.dataset.seat); return; }
+    const b = e.target.closest('[data-bk]');
+    if (b){ S.booked[b.dataset.bk] = true; render5(); }
+  });
+  $('#thMinus').onclick = () => { if (S.th > 5){ S.th--; syncTh(); } };
+  $('#thPlus').onclick = () => { if (S.th < SQUAD){ S.th++; syncTh(); } };
+  $('#lockBtn').onclick = () => { if (meera().locked) go(4); else upiStart(); };
+  $('#failLink').onclick = failSheet;
+  $('#scrim').onclick = closeSheet;
+  $('#restart').onclick = () => { reset(); $('#tag').classList.remove('on','set'); go(1); };
+  $('#prevBtn').onclick = () => go(S.cur - 1);
+  $('#nextBtn').onclick = () => go(S.cur + 1);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+  reset();
+  go(1);
+  $('#s1').classList.remove('enter');
+})();
+</script>
+
+</body>
+</html>
